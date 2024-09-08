@@ -1,0 +1,67 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- Define the variables in "$(var.*) expressions" -->
+<?define Name = "HWInfoProm Service" ?>
+<?define Manufacturer = "Rednoodles" ?>
+<?define Version = "1.0.0.0" ?>
+<?define UpgradeCode = "A54EBE69-4DCA-4AEC-B685-9F15A29F575F" ?>
+
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+    <Package Name="$(Name)"
+             Manufacturer="$(Manufacturer)"
+             Version="$(Version)"
+             UpgradeCode="$(var.UpgradeCode)"
+             Compressed="true">
+
+        <!-- Allow upgrades and prevent downgrades -->
+        <MajorUpgrade DowngradeErrorMessage="A later version of HWInfoProm Service is already installed. Setup will now exit." />
+		
+		<!-- Define the directory structure -->
+		<StandardDirectory Id="ProgramFiles64Folder">
+                <Directory Id="ROOTDIRECTORY" Name="$(var.Manufacturer)">
+                    <Directory Id="INSTALLFOLDER" Name="$(Name)" />
+                </Directory>
+		</StandardDirectory>
+
+        <!-- The files inside this DirectoryRef are linked to
+             the App.WindowsService directory via INSTALLFOLDER -->
+        <DirectoryRef Id="INSTALLFOLDER">
+
+            <!-- Create a single component which is the App.WindowsService.exe file -->
+            <Component Id="ServiceExecutable" Bitness="always64">
+
+                <!-- Copies the App.WindowsService.exe file using the
+                     project reference preprocessor variables -->
+                <File Id="HWInfoProm.WindowsService.exe"
+                      Source="$(var.HWInfoProm.WindowsService.TargetDir)publish\HWInfoProm.WindowsService.exe"
+                      KeyPath="true" />
+
+                <!-- Remove all files from the INSTALLFOLDER on uninstall -->
+                <RemoveFile Id="ALLFILES" Name="*.*" On="both" />
+
+                <!-- Tell WiX to install the Service -->
+                <ServiceInstall Id="ServiceInstaller"
+                                Type="ownProcess"
+                                Name="HWInfoProm.WindowsService"
+                                DisplayName="$(Name)"
+                                Description="A Service that published the sensors from HWInfo to prometheus"
+                                Start="auto"
+                                ErrorControl="normal" />
+
+                <!-- Tell WiX to start the Service -->
+                <ServiceControl Id="StartService"
+                                Start="install"
+                                Stop="both"
+                                Remove="uninstall"
+                                Name="HWInfoProm.WindowsService"
+                                Wait="false" />
+            </Component>
+        </DirectoryRef>
+
+        <!-- Tell WiX to install the files -->
+        <Feature Id="Service" Title="HWInfoProm.WindowsService Setup" Level="1">
+            <ComponentRef Id="ServiceExecutable" />
+        </Feature>
+
+    </Package>
+</Wix>
